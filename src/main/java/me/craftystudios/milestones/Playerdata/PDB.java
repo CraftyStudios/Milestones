@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.UUID;
 import java.util.logging.Level;
 
 import org.bukkit.entity.Player;
@@ -40,18 +41,19 @@ public abstract class PDB {
     }
 
 
-    public Integer getMilestoneCount(String string) {
+    public Integer getMilestoneCount(Player player) {
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
             conn = getSQLConnection();
-            ps = conn.prepareStatement("SELECT * FROM " + table + " WHERE player = '"+string+"';");
-   
+            ps = conn.prepareStatement("SELECT * FROM " + table + " WHERE uuid = ?");
+            ps.setString(1, player.getUniqueId().toString());
+    
             rs = ps.executeQuery();
-            while(rs.next()){
-                if(rs.getString("player").equalsIgnoreCase(string.toLowerCase())){ // Tell database to search for the player you sent into the method. e.g getTokens(sam) It will look for sam.
-                    return rs.getInt("milestonecount"); 
+            while (rs.next()) {
+                if (rs.getString("uuid").equals(player.getUniqueId().toString())) {
+                    return rs.getInt("milestonecount");
                 }
             }
         } catch (SQLException ex) {
@@ -67,7 +69,8 @@ public abstract class PDB {
             }
         }
         return 0;
-    }    
+    }
+    
 
     // public Integer getMilestones(String string) {
     //     Connection conn = null;
@@ -102,10 +105,11 @@ public abstract class PDB {
     public void setMilestoneCount(Player player, Integer milestoneCount) {
         Connection conn = null;
         PreparedStatement ps = null;
+        UUID uuid = player.getUniqueId();
         try {
             conn = getSQLConnection();
             ps = conn.prepareStatement("REPLACE INTO " + table + " (player,milestoneCount) VALUES(?,?)"); // IMPORTANT. In SQLite class, We made 3 colums. player, Kills, Total.
-            ps.setString(1, player.getName().toLowerCase());                                             // YOU MUST put these into this line!! And depending on how many
+            ps.setString(1, uuid.toString());                                             // YOU MUST put these into this line!! And depending on how many
                                                                                                          // colums you put (say you made 5) All 5 need to be in the brackets
                                                                                                          // Seperated with comma's (,) AND there needs to be the same amount of
                                                                                                          // question marks in the VALUES brackets. Right now i only have 3 colums

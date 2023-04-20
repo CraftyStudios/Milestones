@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.UUID;
 import java.util.logging.Level;
 
 import org.bukkit.entity.Player;
@@ -40,17 +41,17 @@ public abstract class FDB {
     }
 
 
-    public Integer getFame(String string) {
+    public Integer getFame(Player player) {
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
         try {
             conn = getSQLConnection();
-            ps = conn.prepareStatement("SELECT * FROM " + table + " WHERE player = '"+string+"';");
-   
+            ps = conn.prepareStatement("SELECT * FROM " + table + " WHERE player = ?;");
+            ps.setString(1, player.getName());
             rs = ps.executeQuery();
             while(rs.next()){
-                if(rs.getString("player").equalsIgnoreCase(string.toLowerCase())){ // Tell database to search for the player you sent into the method. e.g getTokens(sam) It will look for sam.
+                if(rs.getString("player").equalsIgnoreCase(player.getName().toLowerCase())){ 
                     return rs.getInt("fame"); 
                 }
             }
@@ -67,18 +68,20 @@ public abstract class FDB {
             }
         }
         return 0;
-    }    
-    public int getFameLevel(String string) {
+    }
+    
+    public int getFameLevel(Player player) {
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
+        
         try {
             conn = getSQLConnection();
-            ps = conn.prepareStatement("SELECT * FROM " + table + " WHERE player = '"+string+"';");
-   
+            ps = conn.prepareStatement("SELECT * FROM " + table + " WHERE player = ?;");
+            ps.setString(1, player.getUniqueId().toString());
             rs = ps.executeQuery();
             while(rs.next()){
-                if(rs.getString("player").equalsIgnoreCase(string.toLowerCase())){ // Tell database to search for the player you sent into the method. e.g getTokens(sam) It will look for sam.
+                if(rs.getString("player").equalsIgnoreCase(player.getUniqueId().toString())){ // Tell database to search for the player you sent into the method. e.g getTokens(sam) It will look for sam.
                     return rs.getInt("famelevel"); 
                 }
             }
@@ -96,6 +99,7 @@ public abstract class FDB {
         }
         return 0;
     }
+    
     // public Integer get(String string) {
     //     Connection conn = null;
     //     PreparedStatement ps = null;
@@ -129,16 +133,51 @@ public abstract class FDB {
     public void setFame(Player player, Integer fame) {
         Connection conn = null;
         PreparedStatement ps = null;
+        UUID uuid = player.getUniqueId();
         try {
             conn = getSQLConnection();
             ps = conn.prepareStatement("REPLACE INTO " + table + " (player,fame,famelevel) VALUES(?,?,?)"); // IMPORTANT. In SQLite class, We made 3 colums. player, Kills, Total.
-            ps.setString(1, player.getName().toLowerCase());                                             // YOU MUST put these into this line!! And depending on how many
+            ps.setString(1, uuid.toString());                                             // YOU MUST put these into this line!! And depending on how many
                                                                                                          // colums you put (say you made 5) All 5 need to be in the brackets
                                                                                                          // Seperated with comma's (,) AND there needs to be the same amount of
                                                                                                          // question marks in the VALUES brackets. Right now i only have 3 colums
                                                                                                          // So VALUES (?,?,?) If you had 5 colums VALUES(?,?,?,?,?)
                                                                                                
             ps.setInt(2, fame); // This sets the value in the database. The colums go in order. Player is ID 1, kills is ID 2, Total would be 3 and so on. you can use
+                                  // setInt, setString and so on. tokens and total are just variables sent in, You can manually send values in as well. p.setInt(2, 10) <-
+                                  // This would set the players kills instantly to 10. Sorry about the variable names, It sets their kills to 10 i just have the variable called
+                                  // Tokens from another plugin :/
+            ps.executeUpdate();
+            return;
+        } catch (SQLException ex) {
+            plugin.getLogger().log(Level.SEVERE, Errors.sqlConnectionExecute(), ex);
+        } finally {
+            try {
+                if (ps != null)
+                    ps.close();
+                if (conn != null)
+                    conn.close();
+            } catch (SQLException ex) {
+                plugin.getLogger().log(Level.SEVERE, Errors.sqlConnectionClose(), ex);
+            }
+        }
+        return;      
+    }
+
+    public void setFameLevel(Player player, Integer famelevel) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        UUID uuid = player.getUniqueId();
+        try {
+            conn = getSQLConnection();
+            ps = conn.prepareStatement("REPLACE INTO " + table + " (player,fame,famelevel) VALUES(?,?,?)"); // IMPORTANT. In SQLite class, We made 3 colums. player, Kills, Total.
+            ps.setString(1, uuid.toString());                                             // YOU MUST put these into this line!! And depending on how many
+                                                                                                         // colums you put (say you made 5) All 5 need to be in the brackets
+                                                                                                         // Seperated with comma's (,) AND there needs to be the same amount of
+                                                                                                         // question marks in the VALUES brackets. Right now i only have 3 colums
+                                                                                                         // So VALUES (?,?,?) If you had 5 colums VALUES(?,?,?,?,?)
+                                                                                               
+            ps.setInt(3, famelevel); // This sets the value in the database. The colums go in order. Player is ID 1, kills is ID 2, Total would be 3 and so on. you can use
                                   // setInt, setString and so on. tokens and total are just variables sent in, You can manually send values in as well. p.setInt(2, 10) <-
                                   // This would set the players kills instantly to 10. Sorry about the variable names, It sets their kills to 10 i just have the variable called
                                   // Tokens from another plugin :/
