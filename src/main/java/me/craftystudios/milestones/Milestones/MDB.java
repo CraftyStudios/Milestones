@@ -38,34 +38,25 @@ public abstract class MDB {
     }
 
 
-    public Integer getCompletion(String string) {
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            conn = getSQLConnection();
-            ps = conn.prepareStatement("SELECT * FROM " + table + " WHERE milestone = '"+string+"';");
-   
-            rs = ps.executeQuery();
-            while(rs.next()){
-                if(rs.getString("milestone").equalsIgnoreCase(string.toLowerCase())){ // Tell database to search for the milestone you sent into the method. e.g getTokens(sam) It will look for sam.
-                    return rs.getInt("complete"); 
+    public String getGoal(String milestone) {
+        String query = "SELECT * FROM " + table + " WHERE milestone = ?;";
+        try (Connection conn = getSQLConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, milestone);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    if (rs.getString("milestone").equalsIgnoreCase(milestone.toLowerCase())) {
+                        String goal = rs.getString("goal");
+                        return goal;
+                    }
                 }
             }
         } catch (SQLException ex) {
             plugin.getLogger().log(Level.SEVERE, Errors.sqlConnectionExecute(), ex);
-        } finally {
-            try {
-                if (ps != null)
-                    ps.close();
-                if (conn != null)
-                    conn.close();
-            } catch (SQLException ex) {
-                plugin.getLogger().log(Level.SEVERE, Errors.sqlConnectionClose(), ex);
-            }
         }
-        return 0;
-    }    
+        return null;
+    }
+    
 
 //     public Integer getMilestones(String string) {
 //         Connection conn = null;
